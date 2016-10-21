@@ -1,0 +1,5 @@
+services:
+  adimeocs.callback.ctsearchcallback:
+    class: AdimeoCSBundle\Callback\CtSearchCallback
+    tags:
+      - { name: adimeocs.callback }

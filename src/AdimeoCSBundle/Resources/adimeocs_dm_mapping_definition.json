@@ -1,0 +1,37 @@
+{
+  "class": {
+    "type": "string",
+    "index": "not_analyzed",
+    "store": true
+  },
+  "data": {
+    "type": "string",
+    "store": true,
+    "analyzer": "standard"
+  },
+  "datetime": {
+    "type": "date",
+    "store": true,
+    "format": "date_optional_time"
+  },
+  "key": {
+    "type": "string",
+    "index": "not_analyzed",
+    "store": true
+  },
+  "tag": {
+    "type": "string",
+    "index": "not_analyzed",
+    "store": true
+  },
+  "flag": {
+    "type": "integer",
+    "index": "not_analyzed",
+    "store": true
+  },
+  "searchable": {
+    "type": "string",
+    "store": true,
+    "analyzer": "standard"
+  }
+}

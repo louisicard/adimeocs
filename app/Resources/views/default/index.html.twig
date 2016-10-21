@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+    {% if info|length > 0 %}
+        <table>
+            <thead>
+            <tr>
+                <th>Date/time</th>
+                <th>Label</th>
+                <th>PID</th>
+                <th>Running</th>
+                <th>Data</th>
+                <th>&nbsp;</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for infos in info %}
+                {% set item = infos.item %}
+            <tr>
+                <td>{{ item.datetime|date('Y-m-d H:i:s') }}</td>
+                <td>{{ item.searchable }}</td>
+                <td>{{ item.key }}</td>
+                <td>{{ infos.running ? 'Yes' : 'No' }}</td>
+                <td>{{ item.toJSON }}</td>
+                <td>
+                    <ul>
+                        {% if infos.running %}
+                            <li><a href="{{ path('acs_kill', {'pid':item.key}) }}">Kill</a></li>
+                        {% endif %}
+                        {% if not infos.running %}
+                            <li><a href="{{ path('acs_cleanup', {'tag':item.tag}) }}">Cleanup</a></li>
+                        {% endif %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No active crawler</p>
+    {% endif %}
+
+{% endblock %}
+
+{% block stylesheets %}
+    <style>
+
+    </style>
+{% endblock %}
