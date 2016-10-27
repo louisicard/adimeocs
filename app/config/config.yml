@@ -47,3 +47,10 @@ swiftmailer:
 
 adimeo_cs:
   es_url: "%adimeo_cs_es_url%"
+
+assetic:
+    debug:          '%kernel.debug%'
+    use_controller: '%kernel.debug%'
+    write_to:       %kernel.root_dir%/../web/assetic/
+    filters:
+        cssrewrite: ~

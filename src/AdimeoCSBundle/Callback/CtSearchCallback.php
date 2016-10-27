@@ -20,12 +20,21 @@ class CtSearchCallback implements Callback
         unset($params[$k]);
       }
     }
-    if(isset($data['callback_url'])){
-      $curl = new CurlClient($data['callback_url']);
+    if(isset($data['callbackUrl'])){
+      $curl = new CurlClient($data['callbackUrl']);
       $curl->setMethod('POST');
       $curl->setParams($params);
       $curl->getResponse();
     }
   }
+
+  function getSettingsFields()
+  {
+    return array(
+      'datasourceId',
+      'callbackUrl'
+    );
+  }
+
 
 }

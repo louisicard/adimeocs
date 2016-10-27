@@ -15,4 +15,9 @@ interface Callback
    */
   function execute(DatastoreItem $item, $document);
 
+  /**
+   * @return array
+   */
+  function getSettingsFields();
+
 }

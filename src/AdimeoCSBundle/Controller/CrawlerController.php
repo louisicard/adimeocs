@@ -9,12 +9,18 @@
 namespace AdimeoCSBundle\Controller;
 
 
+use AdimeoCSBundle\Callback\Callback;
 use AdimeoCSBundle\Crawl\DomainCrawler;
 use AdimeoCSBundle\Datastore\DatastoreItem;
 use AdimeoCSBundle\Datastore\DatastoreManager;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\HttpFoundation\Request;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Component\Process\Process;
 
 class CrawlerController extends Controller
 {
@@ -37,10 +43,82 @@ class CrawlerController extends Controller
       );
     }
 
+    global $kernel;
+    $callbacks = $kernel->getContainer()->getParameter('adimeocs.callbacks');
+    $callbackChoices = array(
+      'Select a callback type' => ''
+    );
+    foreach($callbacks as $callback){
+      $callbackChoices[$callback] = $callback;
+    }
+
+    $form = $this->createFormBuilder()
+      ->add('domain', TextType::class, array(
+        'label' => 'Domain',
+        'required' => true,
+      ))
+      ->add('scheme', TextType::class, array(
+        'label' => 'Scheme',
+        'required' => true,
+      ))
+      ->add('authorizedDomains', TextType::class, array(
+        'label' => 'Authorized domains (comma separated)',
+        'required' => false,
+      ))
+      ->add('maxPages', NumberType::class, array(
+        'label' => 'Maximum pages to crawl',
+        'data' => -1,
+        'required' => false,
+      ))
+      ->add('callback', ChoiceType::class, array(
+        'multiple' => false,
+        'expanded' => false,
+        'choices' => $callbackChoices,
+        'required' => true
+      ));
+    if($request->get('callback') != null || isset($request->get('form')['callback'])){
+      $currentCallback = $request->get('callback') != null ? $request->get('callback') != null : $request->get('form')['callback'];
+      foreach($callbacks as $callback){
+        if($callback == $currentCallback){
+          $obj = $kernel->getContainer()->get($callback);
+          foreach($obj->getSettingsFields() as $field){
+            $form = $form->add($field, TextType::class, array(
+              'label' => 'Callback settings field "' . $field . '"',
+              'required' => true
+            ));
+          }
+          break;
+        }
+      }
+    }
+    $form = $form
+      ->add('submit', SubmitType::class, array(
+        'label' => 'Test'
+      ))->getForm();
+
+    $form->handleRequest($request);
+
+    if($form->isValid()){
+      $dc = new DomainCrawler('', '', '');
+      $jsonFile = tempnam(sys_get_temp_dir(), 'adimeocs');
+      $data = $form->getData();
+      if(isset($data['callback'])){
+        $obj = $kernel->getContainer()->get($callback);
+        $data['callback'] = get_class($obj);
+      }
+      file_put_contents($jsonFile, json_encode($data));
+      $cmd = $dc->getCommand() . ' < ' . $jsonFile;
+      popen($cmd . ' &', 'w');
+      usleep(1000 * 1000);
+      unlink($jsonFile);
+      return $this->redirectToRoute('homepage');
+    }
+
     // replace this example code with whatever you need
-    return $this->render('default/index.html.twig', [
-      'base_dir' => realpath($this->getParameter('kernel.root_dir') . '/..') . DIRECTORY_SEPARATOR,
-      'info' => $info
+    return $this->render('AdimeoCSBundle::default/index.html.twig', [
+      'info' => $info,
+      'form' => $form->createView(),
+      'formAjaxCallback' => $this->generateUrl('homepage')
     ]);
   }
 

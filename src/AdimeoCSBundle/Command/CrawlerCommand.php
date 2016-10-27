@@ -34,8 +34,8 @@ class CrawlerCommand extends ContainerAwareCommand
     if($op == 'domain'){
       if(isset($data['domain']) && isset($data['scheme'])) {
         $crawler = new DomainCrawler($data['domain'], $data['scheme'], 'rnd' . rand(1, 999999));
-        $crawler->setMaxPages(isset($data['max_pages']) ? $data['max_pages'] : -1);
-        $crawler->setAuthorizedDomains(isset($data['authorized_domains']) ? $data['authorized_domains'] : array());
+        $crawler->setMaxPages(isset($data['maxPages']) ? $data['maxPages'] : -1);
+        $crawler->setAuthorizedDomains(isset($data['authorizedDomains']) && $data['authorizedDomains'] != null ? $data['authorizedDomains'] : array());
         if(isset($data['callback'])){
           if(class_exists($data['callback'])){
             $crawler->setCallback(new $data['callback']());
@@ -44,7 +44,6 @@ class CrawlerCommand extends ContainerAwareCommand
         $crawler->setSettings($data);
 
         //We should save the process signature
-        var_dump($crawler->getTag());
         $item = new DatastoreItem();
         $item->setTag($crawler->getTag());
         $item->setFlag(DomainCrawler::CRAWL_SIGNATURE_FLAG);

@@ -324,5 +324,15 @@ class DomainCrawler
     $dm->bulkDelete($items);
   }
 
+  public function getCommand(){
+    $bin = PHP_BINARY;
+    if(!is_executable($bin)){
+      $bin = PHP_BINDIR . '/php';
+    }
+    $console = __DIR__ . '/../../../bin/console';
+    $cmd = '"' . $bin . '" "' . $console . '" acs:crawl domain';
+    return $cmd;
+  }
+
 
 }
