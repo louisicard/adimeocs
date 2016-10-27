@@ -39,10 +39,10 @@ class CrawlerController extends Controller
 
     $info = array();
     foreach($items as $item){
-
+      exec('ps aux | grep -i "' . $item->getKey() . '" | grep -v "grep"', $pids);
       $info[] = array(
         'item' => $item,
-        'running' => posix_kill($item->getKey(), 0)
+        'running' => !empty($pids)
       );
     }
 
