@@ -51,6 +51,5 @@ adimeo_cs:
 assetic:
     debug:          '%kernel.debug%'
     use_controller: '%kernel.debug%'
-    write_to:       %kernel.root_dir%/../web/assetic/
     filters:
         cssrewrite: ~
