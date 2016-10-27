@@ -39,6 +39,7 @@ class CrawlerController extends Controller
 
     $info = array();
     foreach($items as $item){
+      $pids = '';
       exec('ps aux | grep -i "' . $item->getKey() . '" | grep -v "grep"', $pids);
       $owner = NULL;
       if(!empty($pids)){
