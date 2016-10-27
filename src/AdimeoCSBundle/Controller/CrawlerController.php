@@ -40,9 +40,17 @@ class CrawlerController extends Controller
     $info = array();
     foreach($items as $item){
       exec('ps aux | grep -i "' . $item->getKey() . '" | grep -v "grep"', $pids);
+      $owner = NULL;
+      if(!empty($pids)){
+        $raw = preg_split('/[ ]+/', $pids[0]);
+        if(count($raw) > 0){
+          $owner = $raw[0];
+        }
+      }
       $info[] = array(
         'item' => $item,
-        'running' => !empty($pids)
+        'running' => !empty($pids),
+        'owner' => $owner
       );
     }
 
@@ -133,7 +141,7 @@ class CrawlerController extends Controller
    * @Route("/kill/{pid}", name="acs_kill")
    */
   public function killAction(Request $request, $pid){
-    posix_kill($pid, 9);
+    exec('kill -9 ' . $pid);
     return $this->redirectToRoute('homepage');
   }
 

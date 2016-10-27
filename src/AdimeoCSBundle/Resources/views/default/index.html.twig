@@ -9,6 +9,7 @@
                 <th>Date/time</th>
                 <th>Label</th>
                 <th>PID</th>
+                <th>Owner</th>
                 <th>Running</th>
                 <th>Data</th>
                 <th>&nbsp;</th>
@@ -21,6 +22,7 @@
                     <td>{{ item.datetime|date('Y-m-d H:i:s') }}</td>
                     <td>{{ item.searchable }}</td>
                     <td>{{ item.key }}</td>
+                    <td>{{ infos.owner is defined and infos.owner != '' ? infos.owner : 'Unknown' }}</td>
                     <td>{{ infos.running ? 'Yes' : 'No' }}</td>
                     <td>{{ item.toJSON }}</td>
                     <td>
