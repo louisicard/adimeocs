@@ -30,6 +30,9 @@ class CrawlerController extends Controller
   public function indexAction(Request $request)
   {
 
+    $dm = new DatastoreManager();
+    $dm->init();
+
     $items = DatastoreItem::loadByProperties(array(
       'flag' => DomainCrawler::CRAWL_SIGNATURE_FLAG
     ));
