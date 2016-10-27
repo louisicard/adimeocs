@@ -109,6 +109,10 @@ class CrawlerController extends Controller
         $obj = $kernel->getContainer()->get($callback);
         $data['callback'] = get_class($obj);
       }
+      if(isset($data['authorizedDomains'])){
+        $authorizedDomains = array_map('trim', explode(',', $data['authorizedDomains']));
+        $data['authorizedDomains'] = $authorizedDomains;
+      }
       file_put_contents($jsonFile, json_encode($data));
       $cmd = $dc->getCommand() . ' < ' . $jsonFile;
       popen($cmd . ' &', 'w');
