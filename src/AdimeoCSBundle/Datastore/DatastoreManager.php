@@ -129,7 +129,7 @@ class DatastoreManager
         'bool' => array(
           'must' => array(
             array(
-              'match_all' => array()
+              'match_all' => array('boost' => 1)
             )
           )
         )

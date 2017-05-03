@@ -1,11 +1,10 @@
 {
   "class": {
-    "type": "string",
-    "index": "not_analyzed",
+    "type": "keyword",
     "store": true
   },
   "data": {
-    "type": "string",
+    "type": "text",
     "store": true,
     "analyzer": "standard"
   },
@@ -15,13 +14,11 @@
     "format": "date_optional_time"
   },
   "key": {
-    "type": "string",
-    "index": "not_analyzed",
+    "type": "keyword",
     "store": true
   },
   "tag": {
-    "type": "string",
-    "index": "not_analyzed",
+    "type": "keyword",
     "store": true
   },
   "flag": {
@@ -30,7 +27,7 @@
     "store": true
   },
   "searchable": {
-    "type": "string",
+    "type": "text",
     "store": true,
     "analyzer": "standard"
   }
