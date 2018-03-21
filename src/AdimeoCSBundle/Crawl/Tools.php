@@ -25,11 +25,21 @@ class Tools
       'wrap-attributes' => false,
       'break-before-br' => false,
       'vertical-space' => false,
+      'wrap-script-literals' => false
     );
     $dom = new \DOMDocument();
     try{
       libxml_use_internal_errors(true);
-      $dom->loadHTML(mb_convert_encoding(tidy_repair_string($html, $options, 'utf8'), 'HTML-ENTITIES', 'UTF-8'));
+      $cleanHtml = mb_convert_encoding(tidy_repair_string($html, $options, 'utf8'), 'HTML-ENTITIES', 'UTF-8');
+      $dom->loadHTML($cleanHtml);
+
+      //Let's test if we find links
+      $testXml = simplexml_import_dom($dom);
+      if(count($testXml->xpath('//a')) == 0) {
+        //No links found so Tidy must have messed up
+        $cleanHtml = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
+        $dom->loadHTML($cleanHtml);
+      }
       libxml_clear_errors();
     }catch(\Exception $ex){}
     return simplexml_import_dom($dom);
@@ -185,6 +195,25 @@ END;
       || isset($words_count['au']) && $words_count['au'] > 3;
     $lang = $french ? 'fr' : 'not_fr';
     return $lang;
+  }
+
+  public static function getUrlsFromSitemap($url) {
+    $curl = new CurlClient($url);
+    $sitemapXmlData = $curl->getResponse();
+    $r = [];
+    if(isset($sitemapXmlData['code']) && $sitemapXmlData['code'] == 200) {
+      print 'Handling sitemap.xml at ' . $url . PHP_EOL;
+      $xml = simplexml_load_string(str_replace('xmlns=', 'ns=', $sitemapXmlData['data']));
+      $sitemaps = $xml->xpath('//sitemapindex/sitemap');
+      foreach($sitemaps as $sitemap) {
+        $r = array_merge($r, static::getUrlsFromSitemap((string)$sitemap->loc));
+      }
+      $urls = $xml->xpath('//urlset/url');
+      foreach($urls as $page) {
+        $r[] = (string)$page->loc;
+      }
+    }
+    return $r;
   }
 
 }

@@ -74,7 +74,7 @@ class DatastoreManager
     $this->client->indices()->flush();
   }
 
-  public function saveDocument($doc, $id = NULL){
+  public function saveDocument($doc, $id = NULL, $noFlush = FALSE){
     $params = array(
       'index' => '.adimeocs',
       'type' => 'datastore',
@@ -84,9 +84,11 @@ class DatastoreManager
       $params['id'] = $id;
     }
     $r = $this->client->index($params);
-    $this->client->indices()->flush(array(
-      'index' => '.adimeocs',
-    ));
+    if(!$noFlush) {
+      $this->client->indices()->flush(array(
+        'index' => '.adimeocs',
+      ));
+    }
     if(isset($r['_id'])){
       return $r['_id'];
     }
@@ -188,6 +190,12 @@ class DatastoreManager
   {
     unset($this->client);
     parent::__unset($name);
+  }
+
+  public function flush() {
+    $this->client->indices()->flush(array(
+      'index' => '.adimeocs',
+    ));
   }
 
 

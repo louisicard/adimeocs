@@ -179,18 +179,60 @@ class DomainCrawler
     return 'crawling_' . $this->domain . '_' . $this->tagPrefix;
   }
 
+  private $robotsTxtParser = null;
+  private function getRobotsTxtParser() {
+    if($this->robotsTxtParser == null) {
+      $this->robotsTxtParser = new \RobotsTxtParser($this->settings['robots.txt']);
+      $this->robotsTxtParser->setUserAgent('AdimeoDataSuite/1.0.0');
+    }
+    return $this->robotsTxtParser;
+  }
+
   public function start(){
-    //Start with the homepage
-    $homepage = $this->scheme . '://' . $this->getDomain();
-    $dsItem = new DatastoreItem();
-    $dsItem->setFlag(static::CRAWL_STATUS_NEW);
-    $dsItem->setTag($this->getTag());
-    $dsItem->setSearchable('Crawling domain ' . $this->domain);
-    $dsItem->setKey($homepage);
-    $dsItem->setDatetime(new \DateTime());
-    $dsItem->setClass(static::class);
-    $dsItem->setData($this->getSettings());
-    $dsItem->save();
+
+    //First we need to check if a robots.txt file is available
+    $robotsTxtUrl = $this->scheme . '://' . $this->getDomain() . '/robots.txt';
+    $curl = new CurlClient($robotsTxtUrl);
+    $robotsTxtData = $curl->getResponse();
+    if(isset($robotsTxtData['code']) && $robotsTxtData['code'] == 200) {
+      print 'Handling robots.txt at ' . $robotsTxtUrl . PHP_EOL;
+      $this->settings['robots.txt'] = $robotsTxtData['data'];
+    }
+
+    //Then we need to check if a sitemap.xml file is available
+    $sitemapXmlUrl = $this->scheme . '://' . $this->getDomain() . '/sitemap.xml';
+    $urls = Tools::getUrlsFromSitemap($sitemapXmlUrl);
+    if(count($urls) > 0) {
+    //if(false) {
+      print 'Found ' . count($urls) . ' urls. Dumping them to the index (may take a while).' . PHP_EOL;
+      foreach($urls as $pageUrl) {
+        $dsItem = new DatastoreItem();
+        $dsItem->setFlag(static::CRAWL_STATUS_NEW);
+        $dsItem->setTag($this->getTag());
+        $dsItem->setSearchable('Crawling domain ' . $this->domain . ' from sitemap.xml');
+        $dsItem->setKey($pageUrl);
+        $dsItem->setDatetime(new \DateTime());
+        $dsItem->setClass(static::class);
+        $dsItem->setData($this->getSettings());
+        $dsItem->setDomain(Tools::getDomain($pageUrl));
+        $dsItem->save(TRUE);
+      }
+      (new DatastoreManager())->flush();
+    }
+    else {
+      //Start with the homepage
+      $homepage = $this->scheme . '://' . $this->getDomain();
+      $dsItem = new DatastoreItem();
+      $dsItem->setFlag(static::CRAWL_STATUS_NEW);
+      $dsItem->setTag($this->getTag());
+      $dsItem->setSearchable('Crawling domain ' . $this->domain);
+      $dsItem->setKey($homepage);
+      $dsItem->setDatetime(new \DateTime());
+      $dsItem->setClass(static::class);
+      $dsItem->setData($this->getSettings());
+      $dsItem->setDomain(Tools::getDomain($homepage));
+      $dsItem->save();
+    }
 
     //Let's loop while there are pages to crawl
     $items = $this->getItemsToCrawl();
@@ -200,7 +242,7 @@ class DomainCrawler
       for ($i = 0; $i < static::POOL_SIZE; $i++) {
         if (isset($this->pool[$i])) {
           if (!$this->pool[$i]->isRunning()) {
-            //the thread is finished. Lets handle the outputÂ
+            //the thread is finished. Lets handle the output
             $this->handlePageCrawlerOutput($this->pool[$i]->getOutput());
             unset($this->pool[$i]);
           }
@@ -221,6 +263,7 @@ class DomainCrawler
               $process->start();
               $this->pool[$i] = $process;
               print 'Launching new process on unallocated thread => PID=' . $process->getPid() . ', slot=' . ($i + 1) . PHP_EOL;
+              print '  └── URL = ' . $item->getKey() . PHP_EOL;
               break;
             }
 
@@ -259,6 +302,11 @@ class DomainCrawler
       }
       if(isset($doc['internal_links'])) {
         foreach ($doc['internal_links'] as $url) {
+          if(isset($this->settings['robots.txt'])) {
+            if(!$this->getRobotsTxtParser()->isAllowed($url)) {
+              return;
+            }
+          }
           $this->processUrl($url, $parent);
         }
       }
@@ -291,9 +339,11 @@ class DomainCrawler
       $item->setDatetime(new \DateTime());
       $item->setKey($url);
       $item->setTag($parent->getTag());
+      $item->setDomain(Tools::getDomain($url));
       $item->setSearchable('Discovered ' . $url . ' from ' . $parent->getKey());
       $item->setData($parent->getData());
       $item->save();
+      print '    ╚══ Discovered URL ' . $item->getKey() . PHP_EOL;
     }
   }
 

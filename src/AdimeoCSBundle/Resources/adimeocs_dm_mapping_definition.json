@@ -21,6 +21,10 @@
     "type": "keyword",
     "store": true
   },
+  "domain": {
+    "type": "keyword",
+    "store": true
+  },
   "flag": {
     "type": "integer",
     "index": "not_analyzed",

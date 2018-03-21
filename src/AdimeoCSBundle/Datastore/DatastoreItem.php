@@ -37,6 +37,11 @@ class DatastoreItem
   /**
    * @var string
    */
+  private $domain;
+
+  /**
+   * @var string
+   */
   private $tag;
 
   /**
@@ -190,6 +195,22 @@ class DatastoreItem
     $this->data = $data;
   }
 
+  /**
+   * @return string
+   */
+  public function getDomain()
+  {
+    return $this->domain;
+  }
+
+  /**
+   * @param string $domain
+   */
+  public function setDomain($domain)
+  {
+    $this->domain = $domain;
+  }
+
   public static function load($id){
     $dm = new DatastoreManager();
     $r = $dm->getItemById($id);
@@ -243,6 +264,9 @@ class DatastoreItem
     if(isset($r['tag'])){
       $item->tag = $r['tag'];
     }
+    if(isset($r['domain'])){
+      $item->domain = $r['domain'];
+    }
     return $item;
   }
 
@@ -275,13 +299,16 @@ class DatastoreItem
     if(isset($array['tag'])){
       $item->tag = $array['tag'];
     }
+    if(isset($array['domain'])){
+      $item->domain = $array['domain'];
+    }
     if(isset($array['id'])){
       $item->id = $array['id'];
     }
     return $item;
   }
 
-  public function save(){
+  public function save($noFlush = FALSE){
     $dm = new DatastoreManager();
     $id = $dm->saveDocument(array(
       'class' => $this->class,
@@ -291,7 +318,8 @@ class DatastoreItem
       'data' => json_encode($this->data),
       'searchable' => $this->searchable,
       'tag' => $this->tag,
-    ), $this->id);
+      'domain' => $this->domain,
+    ), $this->id, $noFlush);
     $this->id = $id;
     unset($dm);
     return $id;

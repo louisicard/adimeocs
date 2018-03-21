@@ -44,7 +44,7 @@ class CurlClient
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_TIMEOUT, 8);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'User-Agent: Lynx/2.8.4rel.1 libwww-FM/2.14'
+      'User-Agent: AdimeoDataSuite/1.0.0'
     ));
     if($this->username != NULL && $this->password != NULL){
       curl_setopt($ch, CURLOPT_USERPWD, $this->username . ":" . $this->password);

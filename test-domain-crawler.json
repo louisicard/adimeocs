@@ -1,9 +1,0 @@
-{
-	"domain": "www.rogard.blog.sacd.fr",
-	"scheme": "http",
-	"authorizedDomains": ["www.europe.blog.sacd.fr"],
-	"maxPages": -1,
-	"callback": "AdimeoCSBundle\\Callback\\CtSearchCallback",
-	"callbackUrl": "http://ctsearch.lan/app_dev.php/webcrawler-response",
-	"datasourceId": "AVfdtk-hrmP_KDzm9c0P"
-}
