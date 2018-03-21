@@ -43,6 +43,7 @@ class CrawlerCommand extends ContainerAwareCommand
         }
         $crawler->setSettings($data);
         $crawler->setNoDiscovery(isset($data['noDiscovery']) ? $data['noDiscovery'] : false);
+        $crawler->setIgnoreSitemap(isset($data['ignoreSitemap']) ? $data['ignoreSitemap'] : false);
 
         //We should save the process signature
         $item = new DatastoreItem();

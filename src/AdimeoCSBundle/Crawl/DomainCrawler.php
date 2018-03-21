@@ -42,6 +42,11 @@ class DomainCrawler
   private $noDiscovery = false;
 
   /**
+   * @var bool
+   */
+  private $ignoreSitemap = false;
+
+  /**
    * @var string
    */
   private $tagPrefix;
@@ -165,6 +170,22 @@ class DomainCrawler
   }
 
   /**
+   * @return bool
+   */
+  public function getIgnoreSitemap()
+  {
+    return $this->ignoreSitemap;
+  }
+
+  /**
+   * @param bool $ignoreSitemap
+   */
+  public function setIgnoreSitemap($ignoreSitemap)
+  {
+    $this->ignoreSitemap = $ignoreSitemap;
+  }
+
+  /**
    * @return Callback
    */
   public function getCallback()
@@ -222,7 +243,7 @@ class DomainCrawler
 
     //Then we need to check if a sitemap.xml file is available
     $sitemapXmlUrl = $this->scheme . '://' . $this->getDomain() . '/sitemap.xml';
-    $urls = Tools::getUrlsFromSitemap($sitemapXmlUrl);
+    $urls = !$this->getIgnoreSitemap() ? Tools::getUrlsFromSitemap($sitemapXmlUrl) : [];
     if(count($urls) > 0) {
     //if(false) {
       print 'Found ' . count($urls) . ' urls. Dumping them to the index (may take a while).' . PHP_EOL;
