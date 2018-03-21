@@ -42,6 +42,7 @@ class CrawlerCommand extends ContainerAwareCommand
           }
         }
         $crawler->setSettings($data);
+        $crawler->setNoDiscovery(isset($data['noDiscovery']) ? $data['noDiscovery'] : false);
 
         //We should save the process signature
         $item = new DatastoreItem();

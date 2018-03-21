@@ -37,6 +37,11 @@ class DomainCrawler
   private $maxPages = -1;
 
   /**
+   * @var bool
+   */
+  private $noDiscovery = false;
+
+  /**
    * @var string
    */
   private $tagPrefix;
@@ -141,6 +146,22 @@ class DomainCrawler
   public function setMaxPages($maxPages)
   {
     $this->maxPages = $maxPages;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isNoDiscovery()
+  {
+    return $this->noDiscovery;
+  }
+
+  /**
+   * @param bool $noDiscovery
+   */
+  public function setNoDiscovery($noDiscovery)
+  {
+    $this->noDiscovery = $noDiscovery;
   }
 
   /**
@@ -300,21 +321,23 @@ class DomainCrawler
       if($this->getCallback() != null){
         $this->getCallback()->execute($parent, $doc);
       }
-      if(isset($doc['internal_links'])) {
-        foreach ($doc['internal_links'] as $url) {
-          if(isset($this->settings['robots.txt'])) {
-            if(!$this->getRobotsTxtParser()->isAllowed($url)) {
-              return;
+      if(!$this->isNoDiscovery()) {
+        if (isset($doc['internal_links'])) {
+          foreach ($doc['internal_links'] as $url) {
+            if (isset($this->settings['robots.txt'])) {
+              if (!$this->getRobotsTxtParser()->isAllowed($url)) {
+                return;
+              }
             }
+            $this->processUrl($url, $parent);
           }
-          $this->processUrl($url, $parent);
         }
-      }
-      if(!empty($this->getAuthorizedDomains()) && isset($doc['external_links'])){
-        foreach($this->getAuthorizedDomains() as $domain){
-          foreach($doc['external_links'] as $link){
-            if(Tools::getDomain($link) == $domain){
-              $this->processUrl($link, $parent);
+        if (!empty($this->getAuthorizedDomains()) && isset($doc['external_links'])) {
+          foreach ($this->getAuthorizedDomains() as $domain) {
+            foreach ($doc['external_links'] as $link) {
+              if (Tools::getDomain($link) == $domain) {
+                $this->processUrl($link, $parent);
+              }
             }
           }
         }
