@@ -10,7 +10,7 @@ use Symfony\Component\Process\Process;
 class DomainCrawler
 {
 
-  const POOL_SIZE = 10;
+  const POOL_SIZE = 20;
   const CRAWL_STATUS_NEW = 2;
   const CRAWL_STATUS_PROCESSING = 1;
   const CRAWL_STATUS_DONE = 0;
@@ -298,7 +298,7 @@ class DomainCrawler
           for ($i = 0; $i < static::POOL_SIZE; $i++) {
             if (!isset($this->pool[$i]))  {
               $item->setFlag(DomainCrawler::CRAWL_STATUS_PROCESSING);
-              $item->save();
+              $item->save(TRUE);
               $crawler = new PageCrawler($item);
               $process = new Process($crawler->getCommand());
               $process->setInput($item->toJSON());
@@ -310,6 +310,7 @@ class DomainCrawler
             }
 
           }
+          (new DatastoreManager())->flush();
         }
       }
       //we should sleep for 10 ms
@@ -346,11 +347,13 @@ class DomainCrawler
         if (isset($doc['internal_links'])) {
           foreach ($doc['internal_links'] as $url) {
             if (isset($this->settings['robots.txt'])) {
-              if (!$this->getRobotsTxtParser()->isAllowed($url)) {
-                return;
+              if ($this->getRobotsTxtParser()->isAllowed($url)) {
+                $this->processUrl($url, $parent);
               }
             }
-            $this->processUrl($url, $parent);
+            else {
+              $this->processUrl($url, $parent);
+            }
           }
         }
         if (!empty($this->getAuthorizedDomains()) && isset($doc['external_links'])) {
@@ -364,7 +367,8 @@ class DomainCrawler
         }
       }
       $parent->setFlag(DomainCrawler::CRAWL_STATUS_DONE);
-      $parent->save();
+      $parent->save(TRUE);
+      (new DatastoreManager())->flush();
     }
     if(isset($parent)) {
       print 'Crawled ' . $parent->getKey() . PHP_EOL;
@@ -386,7 +390,7 @@ class DomainCrawler
       $item->setDomain(Tools::getDomain($url));
       $item->setSearchable('Discovered ' . $url . ' from ' . $parent->getKey());
       $item->setData($parent->getData());
-      $item->save();
+      $item->save(TRUE);
       print '    ╚══ Discovered URL ' . $item->getKey() . PHP_EOL;
     }
   }
