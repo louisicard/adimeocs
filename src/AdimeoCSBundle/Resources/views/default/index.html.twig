@@ -27,6 +27,7 @@
                     <td>{{ item.toJSON }}</td>
                     <td>
                         <ul>
+                            <li><a href="{{ path('item_details', {'id':item.id}) }}">Details</a></li>
                             {% if infos.running %}
                                 <li><a href="{{ path('acs_kill', {'pid':item.key}) }}">Kill</a></li>
                             {% endif %}

@@ -2,6 +2,7 @@
 
 namespace AdimeoCSBundle\Datastore;
 
+use AdimeoCSBundle\Crawl\DomainCrawler;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 
@@ -196,6 +197,50 @@ class DatastoreManager
     $this->client->indices()->flush(array(
       'index' => '.adimeocs',
     ));
+  }
+
+  public function getCrawlStats($tag) {
+    $json = '{
+        "query": {
+            "term": {
+                "tag": "' . $tag . '"
+            }
+        },
+        "aggs": {
+            "flag": {
+                "terms": {
+                    "field": "flag"
+                }
+            }
+        }
+    }';
+    $r = $this->client->search(array(
+      'index' => '.adimeocs',
+      'type' => 'datastore',
+      'body' => json_decode($json, TRUE)
+    ));
+    $res = array();
+    $total = 0;
+    if(isset($r['aggregations']['flag']['buckets'])) {
+      foreach($r['aggregations']['flag']['buckets'] as $bucket) {
+        switch($bucket['key']) {
+          case DomainCrawler::CRAWL_STATUS_DONE:
+            $res['CRAWL_STATUS_DONE'] = $bucket['doc_count'];
+            $total += $bucket['doc_count'];
+            break;
+          case DomainCrawler::CRAWL_STATUS_PROCESSING:
+            $res['CRAWL_STATUS_PROCESSING'] = $bucket['doc_count'];
+            $total += $bucket['doc_count'];
+            break;
+          case DomainCrawler::CRAWL_STATUS_NEW:
+            $res['CRAWL_STATUS_NEW'] = $bucket['doc_count'];
+            $total += $bucket['doc_count'];
+            break;
+        }
+      }
+      $res['TOTAL'] = $total;
+    }
+    return $res;
   }
 
 

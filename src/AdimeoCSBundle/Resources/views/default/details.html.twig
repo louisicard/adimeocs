@@ -1,0 +1,46 @@
+{% extends 'AdimeoCSBundle::base.html.twig' %}
+
+{% block body %}
+  {% if info.item is defined and info.item is not null %}
+  <fieldset>
+    <legend>Process information</legend>
+    <div>
+      <div class="item"><strong>Label: </strong><span>{{ info.item.searchable }}</span></div>
+      <div class="item"><strong>Running: </strong><span>{{ info.running ? 'Yes' : 'No' }}</span></div>
+      <div class="item"><strong>Owner: </strong><span>{{ info.owner is defined and info.owner != '' ? info.owner : 'Unknown' }}</span></div>
+      <div class="item"><strong>Launch date time: </strong><span>{{ info.item.datetime|date('Y-m-d H:i:s') }}</span></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Crawler configuration</legend>
+    <div>
+      <div class="item"><strong>Domain: </strong><span>{{ data.domain }}</span></div>
+      <div class="item"><strong>Scheme: </strong><span>{{ data.scheme }}</span></div>
+      <div class="item"><strong>Authorized domain(s): </strong><span>{{ data.authorizedDomains|join(', ') }}</span></div>
+      <div class="item"><strong>Max pages: </strong><span>{{ data.maxPages > -1 ? data.maxPages : 'Unlimited' }}</span></div>
+      <div class="item"><strong>Callback class: </strong><span>{{ data.callback }}</span></div>
+      <div class="item"><strong>Callback URL: </strong><span>{{ data.callbackUrl }}</span></div>
+      <div class="item"><strong>Datasource ID: </strong><span>{{ data.datasourceId }}</span></div>
+      <div class="item"><strong>Discovery: </strong><span>{{ data.noDiscovery ? 'No discovery (crawler doesn\'t follow links)' : 'Discovery enabled (crawler follows links)' }}</span></div>
+      <div class="item"><strong>Sitemap.xml: </strong><span>{{ data.ignoreSitemap ? 'Sitemap.xml is ignore (discovery must be enabled)' : 'Crawler initializes with the site sitemap.xml file' }}</span></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Crawler statistics</legend>
+    <div>
+      <div class="item"><strong>Total discovered URLs: </strong><span>{{ stats.TOTAL is defined ? stats.TOTAL : 0 }}</span></div>
+      <div class="item"><strong>Total URLs to crawl: </strong><span>{{ stats.CRAWL_STATUS_NEW is defined ? stats.CRAWL_STATUS_NEW : 0 }}</span></div>
+      <div class="item"><strong>Total URLs being currently crawled: </strong><span>{{ stats.CRAWL_STATUS_PROCESSING is defined ? stats.CRAWL_STATUS_PROCESSING : 0 }}</span></div>
+      <div class="item"><strong>Total crawled URLs: </strong><span>{{ stats.CRAWL_STATUS_DONE is defined ? stats.CRAWL_STATUS_DONE : 0 }}</span></div>
+      <div class="item"><strong>Progress: </strong><span>{{ stats.CRAWL_STATUS_DONE is defined and stats.TOTAL is defined ? (stats.CRAWL_STATUS_DONE / stats.TOTAL * 100)|number_format(2, '.', ',') : 0 }}%</span></div>
+    </div>
+  </fieldset>
+  {% else %}
+    <p>Ce crawl n'existe pas ou est terminé</p>
+  {% endif %}
+  <p><a href="{{ path('homepage') }}">Back to list</a></p>
+
+{% endblock %}
+
