@@ -41,9 +41,9 @@ class ItemController extends Controller
       'running' => !empty($pids),
       'owner' => $owner
     );
-    dump($info);
-    dump(json_decode($item["data"], TRUE));
-    dump($dm->getCrawlStats($item['tag']));
+//    dump($info);
+//    dump(json_decode($item["data"], TRUE));
+//    dump($dm->getCrawlStats($item['tag']));
 
     return $this->render('AdimeoCSBundle::default/details.html.twig', [
       'info' => $info,
