@@ -33,6 +33,9 @@ class CrawlerCommand extends ContainerAwareCommand
 
     if($op == 'domain'){
       if(isset($data['domain']) && isset($data['scheme'])) {
+
+        (new DatastoreManager())->init();
+
         $crawler = new DomainCrawler($data['domain'], $data['scheme'], 'rnd' . rand(1, 999999));
         $crawler->setMaxPages(isset($data['maxPages']) ? $data['maxPages'] : -1);
         $crawler->setAuthorizedDomains(isset($data['authorizedDomains']) && $data['authorizedDomains'] != null ? $data['authorizedDomains'] : array());
