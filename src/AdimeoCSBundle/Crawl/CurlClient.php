@@ -17,6 +17,8 @@ class CurlClient
   private $password = NULL;
   private $method = 'GET';
   private $params = array();
+  private $body = null;
+  private $headers = [];
 
   /**
    * CurlClient constructor.
@@ -38,29 +40,34 @@ class CurlClient
   public function getResponse(){
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $this->url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);CURLOP
     curl_setopt($ch, CURLOPT_HEADER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_TIMEOUT, 8);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array_merge(array(
       'User-Agent: AdimeoDataSuite/1.0.0'
-    ));
+    ), $this->headers));
     if($this->username != NULL && $this->password != NULL){
       curl_setopt($ch, CURLOPT_USERPWD, $this->username . ":" . $this->password);
     }
     if($this->method != 'GET'){
       curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $this->method);
     }
-    if(!empty($this->params)){
-      $qs = '';
-      foreach($this->params as $k => $v){
-        if($qs != ''){
-          $qs .= '&';
+    if($this->getBody() == null) {
+      if (!empty($this->params)) {
+        $qs = '';
+        foreach ($this->params as $k => $v) {
+          if ($qs != '') {
+            $qs .= '&';
+          }
+          $qs .= urlencode($k) . '=' . urlencode($v);
         }
-        $qs .= urlencode($k) . '=' . urlencode($v);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $qs);
       }
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $qs);
+    }
+    else {
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $this->getBody());
     }
 
     $r = curl_exec($ch);
@@ -81,6 +88,8 @@ class CurlClient
         $body = utf8_encode($body);
       }
     }
+
+    curl_close($ch);
 
     return array(
       'code' => $code,
@@ -119,6 +128,38 @@ class CurlClient
   public function setParams($params)
   {
     $this->params = $params;
+  }
+
+  /**
+   * @return null
+   */
+  public function getBody()
+  {
+    return $this->body;
+  }
+
+  /**
+   * @param null $body
+   */
+  public function setBody($body)
+  {
+    $this->body = $body;
+  }
+
+  /**
+   * @return array
+   */
+  public function getHeaders()
+  {
+    return $this->headers;
+  }
+
+  /**
+   * @param array $headers
+   */
+  public function setHeaders($headers)
+  {
+    $this->headers = $headers;
   }
 
 }

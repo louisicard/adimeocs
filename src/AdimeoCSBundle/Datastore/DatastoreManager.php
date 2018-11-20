@@ -2,25 +2,18 @@
 
 namespace AdimeoCSBundle\Datastore;
 
+use AdimeoCSBundle\Crawl\CurlClient;
 use AdimeoCSBundle\Crawl\DomainCrawler;
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
 
 class DatastoreManager
 {
 
-  /**
-   * @var Client
-   */
-  private $client;
+  private $esUrl;
 
   public function __construct()
   {
     global $kernel;
-    $esUrl = $kernel->getContainer()->getParameter('adimeo_cs.es_url');
-    $clientBuilder = new ClientBuilder();
-    $clientBuilder->setHosts([$esUrl]);
-    $this->client = $clientBuilder->build();
+    $this->esUrl = $kernel->getContainer()->getParameter('adimeo_cs.es_url');
   }
 
   public function init()
@@ -33,62 +26,75 @@ class DatastoreManager
     }
   }
 
+  private function execute($uri, $method = 'GET', $body = [], $encodeBody = true) {
+    $client = new CurlClient($this->esUrl . $uri);
+    $client->setMethod($method);
+    if($body != null && !empty($body)) {
+      $client->setBody($encodeBody ? json_encode($body) : $body);
+      $client->setHeaders(array('Content-Type: application/json; charset=utf-8'));
+    }
+    $r = $client->getResponse();
+    if($r['code'] >= 200 && $r['code'] < 400) {
+      return json_decode($r['data'], TRUE);
+    }
+    else {
+      throw new ElasticsearchException('Elasticsearch error : (' . $r['code'] . ') ' . $r['data'], $r['code'], null);
+    }
+  }
+
   private function dmIndexExists()
   {
-    return $this->client->indices()->exists(array(
-      'index' => '.adimeocs'
-    ));
+    try {
+      $this->execute('/.adimeocs');
+      return true;
+    }
+    catch(ElasticsearchException $ex) {
+      if($ex->getCode() == 404)
+        return false;
+      else {
+        throw $ex;
+      }
+    }
   }
 
   private function dmMappingExists()
   {
-    return count($this->client->indices()->getMapping(array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-    ))) > 0;
+    try {
+      $r = $this->execute('/.adimeocs/_mapping');
+      return isset($r['.adimeocs']['mappings']['datastore']);
+    }
+    catch(ElasticsearchException $ex) {
+      if($ex->getCode() == 404)
+        return false;
+      else {
+        throw $ex;
+      }
+    }
   }
 
   private function createDmIndex()
   {
     $settingsDefinition = file_get_contents(__DIR__ . '/../Resources/adimeocs_dm_index_settings.json');
-    $params = array(
-      'index' => '.adimeocs',
-      'body' => array(
-        'settings' => json_decode($settingsDefinition, TRUE)
-      ),
-    );
-    $this->client->indices()->create($params);
-    $this->client->indices()->flush();
+    $this->execute('/.adimeocs', 'PUT', array('settings' => json_decode($settingsDefinition, TRUE)));
+    $this->execute('/.adimeocs/_flush');
   }
 
   private function createDmMapping()
   {
     $mappingDefinition = file_get_contents(__DIR__ . '/../Resources/adimeocs_dm_mapping_definition.json');
-    $params = array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'body' => array(
-        'properties' => json_decode($mappingDefinition, TRUE)
-      ),
-    );
-    $this->client->indices()->putMapping($params);
-    $this->client->indices()->flush();
+    $this->execute('/.adimeocs/_mapping/datastore', 'PUT', array('properties' => json_decode($mappingDefinition, TRUE)));
+    $this->execute('/.adimeocs/_flush');
   }
 
   public function saveDocument($doc, $id = NULL, $noFlush = FALSE){
-    $params = array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'body' => $doc
-    );
+    $uri = '/.adimeocs/datastore';
     if($id != NULL){
-      $params['id'] = $id;
+      $uri .= '/' . $id;
     }
-    $r = $this->client->index($params);
+    $r = $this->execute($uri, $id != NULL ? 'PUT' : 'POST', $doc);
+
     if(!$noFlush) {
-      $this->client->indices()->flush(array(
-        'index' => '.adimeocs',
-      ));
+      $this->execute('/.adimeocs/_flush');
     }
     if(isset($r['_id'])){
       return $r['_id'];
@@ -97,32 +103,16 @@ class DatastoreManager
   }
 
   public function getItemById($id){
-    $r = $this->client->search(array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'body' => array(
-        'query' => array(
-          'ids' => array(
-            'values' => array($id)
-          )
-        )
-      )
-    ));
-    if(isset($r['hits']['hits'][0]['_source'])){
-      return $r['hits']['hits'][0]['_source'];
+    $r = $this->execute('/.adimeocs/datastore/' . $id);
+    if(isset($r['_source'])){
+      return $r['_source'];
     }
     return null;
   }
 
   public function delete($id){
-    $r = $this->client->delete(array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'id' => $id
-    ));
-    $this->client->indices()->flush(array(
-      'index' => '.adimeocs',
-    ));
+    $r =  $r = $this->execute('/.adimeocs/datastore/' . $id, 'DELETE');
+    $this->execute('/.adimeocs/_flush');
     return $r;
   }
 
@@ -149,12 +139,7 @@ class DatastoreManager
         )
       );
     }
-    $r = $this->client->search(array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'body' => $body,
-      'scroll' => '1ms'
-    ));
+    $r = $this->execute('/.adimeocs/datastore/_search?scroll=1ms', 'GET', $body);
     if(isset($r['_scroll_id'])){
       $scrollId = $r['_scroll_id'];
       $hits = array();
@@ -162,7 +147,7 @@ class DatastoreManager
         foreach($r['hits']['hits'] as $hit){
           $hits[] = array_merge($hit['_source'], array('_id' => $hit['_id']));
         }
-        $r = $this->client->scroll(array(
+        $r = $this->execute('/_search/scroll', 'POST', array(
           'scroll_id' => $scrollId,
           'scroll' => '1m'
         ));
@@ -181,22 +166,11 @@ class DatastoreManager
     foreach ($items as $item) {
       $bulkString .= json_encode(array('delete' => array('_id' => $item->getId()))) . "\n";
     }
-    $params['index'] = '.adimeocs';
-    $params['type']  = 'datastore';
-    $params['body']  = $bulkString;
-    $this->client->bulk($params);
-  }
-
-  function __unset($name)
-  {
-    unset($this->client);
-    parent::__unset($name);
+    $this->execute('/.adimeocs/datastore/_bulk', 'POST', $bulkString, false);
   }
 
   public function flush() {
-    $this->client->indices()->flush(array(
-      'index' => '.adimeocs',
-    ));
+    $this->execute('/.adimeocs/_flush');
   }
 
   public function getCrawlStats($tag) {
@@ -214,11 +188,7 @@ class DatastoreManager
             }
         }
     }';
-    $r = $this->client->search(array(
-      'index' => '.adimeocs',
-      'type' => 'datastore',
-      'body' => json_decode($json, TRUE)
-    ));
+    $r = $this->execute('/.adimeocs/datastore/_search', 'GET', json_decode($json, TRUE));
     $res = array();
     $total = 0;
     if(isset($r['aggregations']['flag']['buckets'])) {
