@@ -197,7 +197,7 @@ END;
     return $lang;
   }
 
-  public static function getUrlsFromSitemap($url) {
+  public static function getUrlsFromSitemap($url, $maxAge = -1) {
     $curl = new CurlClient($url);
     $sitemapXmlData = $curl->getResponse();
     $r = [];
@@ -210,7 +210,19 @@ END;
       }
       $urls = $xml->xpath('//urlset/url');
       foreach($urls as $page) {
-        $r[] = (string)$page->loc;
+        if($maxAge < 0) {
+          $r[] = (string)$page->loc;
+        }
+        else {
+          if(isset($page->lastmod)) {
+            $lastmod = \DateTime::createFromFormat('Y-m-d\TH:i\Z', (string)$page->lastmod);
+            $expires = new \DateTime();
+            $expires->sub(new \DateInterval('PT' . $maxAge . 'S'));
+            if($lastmod->diff($expires)->invert) {
+              $r[] = (string)$page->loc;
+            }
+          }
+        }
       }
     }
     return $r;

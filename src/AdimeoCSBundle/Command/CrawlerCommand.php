@@ -47,6 +47,9 @@ class CrawlerCommand extends ContainerAwareCommand
         $crawler->setSettings($data);
         $crawler->setNoDiscovery(isset($data['noDiscovery']) ? $data['noDiscovery'] : false);
         $crawler->setIgnoreSitemap(isset($data['ignoreSitemap']) ? $data['ignoreSitemap'] : false);
+        if(isset($data['maxAge'])) {
+          $crawler->setMaxAge($data['maxAge']);
+        }
 
         //We should save the process signature
         $item = new DatastoreItem();

@@ -77,6 +77,11 @@ class DomainCrawler
   private $urlCount = 0;
 
   /**
+   * @var int
+   */
+  private $maxAge = -1;
+
+  /**
    * DomainCrawler constructor.
    * @param string $domain
    * @param string $scheme
@@ -210,6 +215,23 @@ class DomainCrawler
   }
 
   /**
+   * @return int
+   */
+  public function getMaxAge()
+  {
+    return $this->maxAge;
+  }
+
+  /**
+   * @param int $maxAge
+   */
+  public function setMaxAge($maxAge)
+  {
+    $this->maxAge = $maxAge;
+  }
+
+
+  /**
    * @param array $settings
    */
   public function setSettings($settings)
@@ -243,7 +265,7 @@ class DomainCrawler
 
     //Then we need to check if a sitemap.xml file is available
     $sitemapXmlUrl = $this->scheme . '://' . $this->getDomain() . '/sitemap.xml';
-    $urls = !$this->getIgnoreSitemap() ? Tools::getUrlsFromSitemap($sitemapXmlUrl) : [];
+    $urls = !$this->getIgnoreSitemap() ? Tools::getUrlsFromSitemap($sitemapXmlUrl, $this->getMaxAge()) : [];
     if(count($urls) > 0) {
     //if(false) {
       print 'Found ' . count($urls) . ' urls. Dumping them to the index (may take a while).' . PHP_EOL;
